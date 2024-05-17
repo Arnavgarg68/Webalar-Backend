@@ -2,7 +2,9 @@
 
 # dependencies
 /node_modules
+/ign
 /.pnp
+/.env
 .pnp.js
 # misc
 .DS_Store

@@ -20,7 +20,8 @@ const userSchema = new mongoose.Schema({
             type:String
         },
         taskstatus:{
-            type:Boolean
+            type:Boolean,
+            default:false
         }
     }]
 },{timestamps:true})

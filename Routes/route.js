@@ -9,19 +9,20 @@ const Team = require('../Models/team')
 // for login
 router.post('/userLogin',async(req,res)=>{
     const {email,password} = req.body;
+    console.log(req.body)
     if(!(email&&password)){
         res.status(200).json({error:"email or password not found"});
         return
     }
-    const user = await User.find({email:email,password:password});
+    const user = await User.findOne({email:email,password:password});
     if(user.length==0){
         res.status(200).json({error:"email or password is incorrect"});
-        return
+        return;
     }
     jwt.sign({email,password},jwtKey,{expiresIn:"2h"},(err,token)=>{
         if(err){
             res.status(400).json({error:"server error try after sometime"});
-            return
+            return;
         }
         res.status(200).json({user:user,auth:token});
     })
@@ -45,18 +46,39 @@ router.post('/userSignup',async(req,res)=>{
         })
     }
     catch(error){
-        res.status(400).json(error.errmsg);
+        res.status(400).json({error:error.errmsg});
         console.log(error);
         return
     }
-    
-    
 })
+//get user data
+router.get("/data/:id",jwtVerify,async(req,res)=>{
+    const {id} = req.params;
+    if(!id){
+        res.status(200).json({error:"Invalid Id passed login again"});
+        return;
+    }
+    try {
+        const user = await User.findById(id);
+        if(!user){
+            res.status(200).json({error:"User not found try login/signup"});
+            return;
+        }
+        res.status(200).json({user});
+
+    } catch (error) {
+        res.status(400).json({error:error.errmsg});
+        return;
+    }
+})
+
+
 
 // new task update
 router.post("/newtask/:id",jwtVerify,async(req,res)=>{
     const {id} = req.params;
     const {taskname,taskstatus}=req.body
+    console.log(req.body)
     try{
         const updateUser = await User.findById(id)
             if(!updateUser){
@@ -66,7 +88,7 @@ router.post("/newtask/:id",jwtVerify,async(req,res)=>{
             const newtask = {taskname,taskstatus};
             updateUser.tasks.push(newtask);
             await updateUser.save();
-            res.status(200).json(updateUser);    }
+            res.status(200).json({user:updateUser});    }
     catch(error){
         console.log(error);
         res.status(400).json({ error: "Internal Server Error" });
@@ -75,6 +97,7 @@ router.post("/newtask/:id",jwtVerify,async(req,res)=>{
 
 // task status update
 router.patch("/status/:id/:taskId",jwtVerify,async(req,res)=>{
+    console.log("hit")
     const {id,taskId} = req.params;
     const {newtaskstatus} = req.body;
     if(!(newtaskstatus==true||newtaskstatus==false)){
@@ -90,7 +113,7 @@ router.patch("/status/:id/:taskId",jwtVerify,async(req,res)=>{
         const newprofile = {...user,tasks:newtasks}
         console.log(newprofile)
         const newuser = await User.findByIdAndUpdate(id,newprofile,{new:true})
-        res.status(200).json(newuser);
+        res.status(200).json({user:newuser});
     }else{
         console.log("unable to find user try login again");
         res.status(200).json({error:"unable to find user try login again"})
@@ -116,7 +139,7 @@ router.delete("/delete/:id/:taskId",jwtVerify,async(req,res)=>{
         const newprofile = {name:name,email:email,password:password,tasks:newtasks}
         console.log(newprofile)
         const newuser = await User.findByIdAndUpdate(id,newprofile,{new:true})
-        res.status(200).json(newuser);
+        res.status(200).json({user:newuser});
         return
     }else{
         res.status(200).json({error:"user is not found try logging again"});
@@ -219,6 +242,7 @@ router.delete("/team/delete/:id/:taskId",async(req,res)=>{
 // middle
 
 function jwtVerify(req,res,next){
+
     const tokenbody = req.headers['authorization'];
     if (!tokenbody) {
         res.status(401).json({error:"Invalid authorization"})
