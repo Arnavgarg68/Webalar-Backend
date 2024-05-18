@@ -154,6 +154,10 @@ router.delete("/delete/:id/:taskId",jwtVerify,async(req,res)=>{
 // create team room
 router.get('/create-team/:groupId',async(req,res)=>{
     const {groupId} = req.params;
+    if(typeof(groupId!=Number)){
+        res.status(200).json({error:"Enter numeric value only"})
+        return;
+    }
     if(!groupId){
         res.status(200).json({error:"empty group Id try again"})
         return;
@@ -185,6 +189,10 @@ router.get('/create-team/:groupId',async(req,res)=>{
 // get room data
 router.get('/team/:groupId',async(req,res)=>{
     const {groupId} = req.params;
+    if(typeof(groupId!=Number)){
+        res.status(200).json({error:"Enter numeric value only"})
+        return;
+    }
     try {
         if(!groupId){
             res.status(200).json({error:"Invalid Room number"})
