@@ -189,7 +189,7 @@ router.get('/create-team/:groupId',async(req,res)=>{
 // get room data
 router.get('/team/:groupId',async(req,res)=>{
     const {groupId} = req.params;
-    if(typeof(groupId!=Number)){
+    if(!/^\d+$/.test(groupId)){
         res.status(200).json({error:"Enter numeric value only"})
         return;
     }
