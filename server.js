@@ -13,7 +13,7 @@ app.use(cors());
 
 
 
-mongoose.connect("mongodb+srv://arnaviitjee:rockrock@cluster-webalar.bc9l1yw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster-Webalar").then(()=>{
+mongoose.connect(process.env.DB).then(()=>{
     app.listen(env.PORT,()=>{
         console.log("http://localhost:"+env.PORT);
     })
