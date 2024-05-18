@@ -52,15 +52,16 @@ router.post('/userLogin',async(req,res)=>{
         return
     }
     const user = await User.findOne({email:email});
+    if(!user){
+        res.status(200).json({error:"email or password is incorrect"});
+        return;
+    }
     const pass = await verifyPassword(password,user.password);
     if(!pass){
         res.status(200).json({error:"wrong password"})
         return;
     }
-    if(!user){
-        res.status(200).json({error:"email or password is incorrect"});
-        return;
-    }
+    
     jwt.sign({email,password},jwtKey,{expiresIn:"2h"},(err,token)=>{
         if(err){
             res.status(400).json({error:"server error try after sometime"});
@@ -250,7 +251,7 @@ router.get('/create-team/:groupId',async(req,res)=>{
         res.status(400).json({error:error.errmsg})
     }
 })
-// get room data
+// get room data 
 router.get('/team/:groupId',async(req,res)=>{
     const {groupId} = req.params;
     if(!/^\d+$/.test(groupId)){
@@ -274,7 +275,7 @@ router.get('/team/:groupId',async(req,res)=>{
     
 })
 
-// create task
+// create task room
 router.post("/team/newtask/:groupId",async(req,res)=>{
     const {groupId} = req.params;
     const {taskname,taskstatus}=req.body
@@ -294,7 +295,7 @@ router.post("/team/newtask/:groupId",async(req,res)=>{
     }
 });
 
-// change status of task
+// change status of task room
 router.patch("/team/status/:groupId/:taskId",async(req,res)=>{
     const {groupId,taskId} = req.params;
     const {newtaskstatus} = req.body;
@@ -323,8 +324,7 @@ router.patch("/team/status/:groupId/:taskId",async(req,res)=>{
     }
 })
 
-// delete task
-
+// delete task room
 router.delete("/team/delete/:groupId/:taskId",async(req,res)=>{
     const {groupId,taskId} = req.params;
     try{
