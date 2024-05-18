@@ -347,7 +347,27 @@ router.delete("/team/delete/:groupId/:taskId",async(req,res)=>{
 
     }
 })
+// delete room
+router.delete("/team/delete/:groupId",async(req,res)=>{
+    const {groupId} = req.params;
+    if(!groupId){
+        res.status(200).json({error:"no roomId provided to perform action"});
+        return;
+    }
+    try {
+        const team = await Team.findOneAndDelete({groupId});
+        if(!team){
+            res.status(200).json({error:"No room with Id -> "+groupId});
+            return;
+        }
+        res.status(200).json("Done");
+        return;
+    } catch (error) {
+        res.status(400).json({error:"Internal server error"});
+        return;
+    }
 
+})
 
 
 // middle
