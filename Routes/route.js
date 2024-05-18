@@ -9,9 +9,26 @@ const Team = require('../Models/team')
 // for login
 router.post('/userLogin',async(req,res)=>{
     const {email,password} = req.body;
-    console.log(req.body)
     if(!(email&&password)){
         res.status(200).json({error:"email or password not found"});
+        return
+    }
+    let flag=0;
+    // password length validation
+    if(password.trim(' ').length<8){
+        res.status(200).json({error:"Minimum length of password should be 8 character"});
+        return;
+    }
+    // email validation
+    for(let i=0;i<email.length;i++){
+        console.log(email.charAt(i))
+        if(email.charAt(i)=='@'){
+            flag+=1;
+            break;
+        }
+    }
+    if(flag==0){
+        res.status(200).json({error:"email is Invalid"});
         return
     }
     const user = await User.findOne({email:email,password:password});
