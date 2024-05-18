@@ -1,11 +1,32 @@
 const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
+const bcrypt = require('bcrypt');
 const dotenv = require('dotenv');
 dotenv.config();
 const jwtKey = process.env.JWTKEY
 const User = require('../Models/user')
 const Team = require('../Models/team')
+
+const saltRounds=Number(process.env.SALTROUNDS)
+// for hashed passsword creation
+async function hashPassword(password) {
+    try {
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        return hashedPassword;
+    } catch (err) {
+        console.error(err);
+    }
+}
+// for hashed password verification
+async function verifyPassword(plainPassword, hashedPassword) {
+    try {
+        const isMatch = await bcrypt.compare(plainPassword, hashedPassword);
+        return isMatch;
+    } catch (err) {
+        console.error(err);
+    }
+}
 // for login
 router.post('/userLogin',async(req,res)=>{
     const {email,password} = req.body;
@@ -21,7 +42,6 @@ router.post('/userLogin',async(req,res)=>{
     }
     // email validation
     for(let i=0;i<email.length;i++){
-        console.log(email.charAt(i))
         if(email.charAt(i)=='@'){
             flag+=1;
             break;
@@ -31,7 +51,12 @@ router.post('/userLogin',async(req,res)=>{
         res.status(200).json({error:"email is Invalid"});
         return
     }
-    const user = await User.findOne({email:email,password:password});
+    const user = await User.findOne({email:email});
+    const pass = await verifyPassword(password,user.password);
+    if(!pass){
+        res.status(200).json({error:"wrong password"})
+        return;
+    }
     if(!user){
         res.status(200).json({error:"email or password is incorrect"});
         return;
@@ -60,7 +85,6 @@ router.post('/userSignup',async(req,res)=>{
     }
     // email validation
     for(let i=0;i<email.length;i++){
-        console.log(email.charAt(i))
         if(email.charAt(i)=='@'){
             flag+=1;
             break;
@@ -70,8 +94,13 @@ router.post('/userSignup',async(req,res)=>{
         res.status(200).json({error:"email is Invalid"});
         return
     }
+    const pass =await hashPassword(password);
+    if(!pass){
+        res.status(400).json({error:"Internal server error"});
+        return;
+    }
     try{
-        const newuser =await User.create({email:email,password:password,name:name});
+        const newuser =await User.create({email:email,password:pass,name:name});
         jwt.sign({newuser},jwtKey,{expiresIn:"2h"},(err,token)=>{
             if(err){
                 res.status(400).json({error:"server error try after sometime"});
