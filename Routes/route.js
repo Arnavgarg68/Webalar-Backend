@@ -15,7 +15,7 @@ router.post('/userLogin',async(req,res)=>{
         return
     }
     const user = await User.findOne({email:email,password:password});
-    if(user.length==0){
+    if(!user){
         res.status(200).json({error:"email or password is incorrect"});
         return;
     }
@@ -152,8 +152,8 @@ router.delete("/delete/:id/:taskId",jwtVerify,async(req,res)=>{
     }
 })
 // create team room
-router.post('/create-team',async(req,res)=>{
-    const {groupId} = req.body;
+router.get('/create-team/:groupId',async(req,res)=>{
+    const {groupId} = req.params;
     if(!groupId){
         res.status(200).json({error:"empty group Id try again"})
         return;
@@ -163,9 +163,20 @@ router.post('/create-team',async(req,res)=>{
         res.status(200).json(team);
         return;
     } catch (error) {
+        let val;
+        async function retry(){
+            val = Math.floor((Math.random() * 100000) + 1);
+            const verify = await Team.findOne({groupId:val});
+            if(verify){
+                retry();
+            }
+            else{
+                return ;
+            }
+        }
         if(error.errmsg.split(' ')[0]=='E11000'){
-
-            res.status(400).json({error:"Kindly choose another Group Id"})
+            retry();
+            res.status(400).json({error:"Kindly choose another Group Id this is already in use "+`Try - ${val}`})
             return
         }
         res.status(400).json({error:error.errmsg})
@@ -179,12 +190,12 @@ router.get('/team/:groupId',async(req,res)=>{
             res.status(200).json({error:"Invalid Room number"})
             return;
         }
-        const team = await Team.find({groupId});
+        const team = await Team.findOne({groupId});
         if(!team){
             res.status(200).json({error:`Room not found with groupId:${groupId}`});
             return;
         }
-        res.status(200).json(team);
+        res.status(200).json({team:team});
     } catch (error) {
         res.status(400).json({error:error.errmsg})
     }
@@ -192,11 +203,11 @@ router.get('/team/:groupId',async(req,res)=>{
 })
 
 // create task
-router.post("/team/newtask/:id",async(req,res)=>{
-    const {id} = req.params;
+router.post("/team/newtask/:groupId",async(req,res)=>{
+    const {groupId} = req.params;
     const {taskname,taskstatus}=req.body
     try{
-        const updateTeam = await Team.findById(id)
+        const updateTeam = await Team.findOne({groupId})
             if(!updateTeam){
                 res.status(200).json({error:"room not found try joining again"});
                 return;
@@ -204,26 +215,55 @@ router.post("/team/newtask/:id",async(req,res)=>{
             const newtask = {taskname,taskstatus};
             updateTeam.tasks.push(newtask);
             await updateTeam.save();
-            res.status(200).json(updateTeam);    }
+            res.status(200).json({team:updateTeam});    }
     catch(error){
         console.log(error);
         res.status(400).json({ error: "Internal Server Error" });
     }
 });
 
+// change status of task
+router.patch("/team/status/:groupId/:taskId",async(req,res)=>{
+    const {groupId,taskId} = req.params;
+    const {newtaskstatus} = req.body;
+    if(!(newtaskstatus==true||newtaskstatus==false)){
+        res.status(200).json({error:"new task status is invalid"})
+        return;
+    }
+    try{
+    const team= await Team.findOne({groupId});
+    if(team){
+        const taskindex= team.tasks.findIndex(t=>t._id.equals(taskId));
+        team.tasks[taskindex].taskstatus = newtaskstatus;
+        const newtasks = team.tasks;
+        const newformat = {...team,tasks:newtasks}
+        const newteam = await Team.findOneAndUpdate({groupId},newformat,{new:true})
+        res.status(200).json({team:newteam});
+    }else{
+        console.log("unable to find team try login again");
+        res.status(200).json({error:"unable to find team try login again"})
+
+    }}
+    catch(error){
+        console.log(error);
+        res.status(400).json({error:"Internal server error try after sometime"})
+
+    }
+})
+
 // delete task
 
-router.delete("/team/delete/:id/:taskId",async(req,res)=>{
-    const {id,taskId} = req.params;
+router.delete("/team/delete/:groupId/:taskId",async(req,res)=>{
+    const {groupId,taskId} = req.params;
     try{
-    const team= await Team.findOne({_id:id});
+    const team= await Team.findOne({groupId});
     if(team){
-        const groupId = team.groupId;
+        const newgroupId = team.groupId;
         const newtasks= team.tasks.filter(t=>!t._id.equals(taskId));
-        const newprofile = {groupId:groupId,tasks:newtasks}
+        const newprofile = {groupId:newgroupId,tasks:newtasks}
         console.log(newprofile)
-        const newteam = await Team.findByIdAndUpdate(id,newprofile,{new:true})
-        res.status(200).json(newteam);
+        const newteam = await Team.findOneAndUpdate({groupId},newprofile,{new:true})
+        res.status(200).json({team:newteam});
         return
     }else{
         res.status(200).json({error:"Invalid room Id try again"});
@@ -236,7 +276,6 @@ router.delete("/team/delete/:id/:taskId",async(req,res)=>{
     }
 })
 
-// change task status
 
 
 // middle
