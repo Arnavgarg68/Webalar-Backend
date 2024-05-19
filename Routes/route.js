@@ -146,7 +146,6 @@ router.get("/data/:id",jwtVerify,async(req,res)=>{
 router.post("/newtask/:id",jwtVerify,async(req,res)=>{
     const {id} = req.params;
     const {taskname,taskstatus}=req.body
-    console.log(req.body)
     try{
         const updateUser = await User.findById(id)
             if(!updateUser){
@@ -165,7 +164,6 @@ router.post("/newtask/:id",jwtVerify,async(req,res)=>{
 
 // task status update
 router.patch("/status/:id/:taskId",jwtVerify,async(req,res)=>{
-    console.log("hit")
     const {id,taskId} = req.params;
     const {newtaskstatus} = req.body;
     if(!(newtaskstatus==true||newtaskstatus==false)){
@@ -179,13 +177,10 @@ router.patch("/status/:id/:taskId",jwtVerify,async(req,res)=>{
         user.tasks[taskindex].taskstatus = newtaskstatus;
         const newtasks = user.tasks;
         const newprofile = {...user,tasks:newtasks}
-        console.log(newprofile)
         const newuser = await User.findByIdAndUpdate(id,newprofile,{new:true})
         res.status(200).json({user:newuser});
     }else{
-        console.log("unable to find user try login again");
         res.status(200).json({error:"unable to find user try login again"})
-
     }}
     catch(error){
         console.log(error);
@@ -205,7 +200,6 @@ router.delete("/delete/:id/:taskId",jwtVerify,async(req,res)=>{
         const password = user.password;
         const newtasks= user.tasks.filter(t=>!t._id.equals(taskId));
         const newprofile = {name:name,email:email,password:password,tasks:newtasks}
-        console.log(newprofile)
         const newuser = await User.findByIdAndUpdate(id,newprofile,{new:true})
         res.status(200).json({user:newuser});
         return
@@ -316,7 +310,6 @@ router.patch("/team/status/:groupId/:taskId",async(req,res)=>{
         const newteam = await Team.findOneAndUpdate({groupId},newformat,{new:true})
         res.status(200).json({team:newteam});
     }else{
-        console.log("unable to find team try login again");
         res.status(200).json({error:"unable to find team try login again"})
 
     }}
@@ -336,7 +329,6 @@ router.delete("/team/delete/:groupId/:taskId",async(req,res)=>{
         const newgroupId = team.groupId;
         const newtasks= team.tasks.filter(t=>!t._id.equals(taskId));
         const newprofile = {groupId:newgroupId,tasks:newtasks}
-        console.log(newprofile)
         const newteam = await Team.findOneAndUpdate({groupId},newprofile,{new:true})
         res.status(200).json({team:newteam});
         return
@@ -385,7 +377,6 @@ function jwtVerify(req,res,next){
     const token = tokenbody.split(' ')[1];
     jwt.verify(token,jwtKey,(err,valid)=>{
         if(err){
-            console.log(err)
             res.status(401).json({error:"Login expired kindly login again first"})
             return
         }
