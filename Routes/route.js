@@ -111,8 +111,11 @@ router.post('/userSignup',async(req,res)=>{
         })
     }
     catch(error){
+        if(error.errmsg.split(' ')[0]=="E11000"){
+            res.status(200).json({error:"Email already in use kindly login or choose different email"});
+            return
+        }
         res.status(400).json({error:error.errmsg});
-        console.log(error);
         return
     }
 })
